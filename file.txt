@@ -1,15 +1,63 @@
-val badJson: String = "yolo"
-// badJson: String = "yolo"
+Codec Testing
 
-parse(badJson)
-// res0: Either[ParsingFailure, Json] = Left(
-//   value = ParsingFailure(
-//     message = "expected json value got 'yolo' (line 1, column 1)",
-//     underlying = ParseException(
-//       msg = "expected json value got 'yolo' (line 1, column 1)",
-//       index = 0,
-//       line = 1,
-//       col = 1
-//     )
-//   )
+Suppose you have the following Person case class and hand-written encoders and decoders. In this case, your decoder includes a typo, "mame" instead of "name".
+
+import io.circe._
+import io.circe.syntax._
+
+case class Person(name: String)
+object Person {
+  implicit val encPerson: Encoder[Person] = Encoder.forProduct1("name")(_.name)
+  implicit val decPerson: Decoder[Person] = Decoder.forProduct1("mame")(Person.apply _)
+}
+
+If you try to encode then decode a Person, you won't be successful:
+
+Person("James").asJson.as[Person]
+// res0: Decoder.Result[Person] = Left(
+//   value = DecodingFailure at .mame: Missing required field
 // )
+
+This process is an example of a round trip. We can think about this round trip at two different levels. Thinking about it for the particular case class Person, we can say that any Person should round trip. This is a property we expect about the Person case class.
+
+However, this is a common expectation for anything that has both an Encoder and Decoder. In that sense, round tripping is a property we expect about anything with a Codec. When we have expectations about all things that implement some typeclass, we have a law.
+Codec laws
+
+To check Codec laws for your custom types, they'll need two implicits in scope -- Arbitrary and Eq.
+
+import cats.Eq
+import io.circe.testing.ArbitraryInstances
+import org.scalacheck.{Arbitrary, Gen}
+
+object Implicits extends ArbitraryInstances {
+  implicit val eqPerson: Eq[Person] = Eq.fromUniversalEquals
+  implicit val arbPerson: Arbitrary[Person] = Arbitrary {
+    Gen.listOf(Gen.alphaChar) map { chars => Person(chars.mkString("")) }
+  }
+}
+
+The presence of those implicit values and an import from the circe-testing module will allow you to create a CodecTests[Person]. First, the dependency:
+
+libraryDependencies += "io.circe" %% "circe-testing" % "0.14.10"
+
+Then, the tests:
+
+import io.circe.testing.CodecTests
+
+val personCodecTests = CodecTests[Person]
+// personCodecTests: CodecTests[Person] = io.circe.testing.CodecTests$$anon$2@5e71f804
+
+CodecTests[T] expose two "rule sets" that can be used with Discipline. The less restrictive set is unserializableCodec.
+
+import Implicits._
+personCodecTests.unserializableCodec
+// res1: personCodecTests.RuleSet = org.typelevel.discipline.Laws$DefaultRuleSet@35198713
+
+It checks whether the Codec for your type successfully round trips through json serialization and deserialization and whether your decoder satisfies consistent error accumulation.
+
+The more restrictive set is codec:
+
+personCodecTests.codec
+// res2: personCodecTests.RuleSet = org.typelevel.discipline.Laws$DefaultRuleSet@6821ef08
+
+It checks the laws from unserializableCodec and ensures that your encoder and decoder can be serialized to and from Java byte array streams. It is generally a good idea to use the stronger laws from .codec, and you definitely should use them if you're in a setting where the JVM has to ship a lot of data around, for example in a Spark application. However, if you're not in a distributed setting and the serializability laws are getting in your way, it's fine to skip them with the unserializableCodec.
