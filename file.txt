@@ -1,13 +1,15 @@
-def factorial(n):
-    """
-    Calculate the factorial of a given number using recursion.
-    """
-    if n == 0 or n == 1:  # Base case
-        return 1
-    else:
-        return n * factorial(n - 1)  # Recursive case
+val badJson: String = "yolo"
+// badJson: String = "yolo"
 
-
-if __name__ == "__main__":
-    main()
-
+parse(badJson)
+// res0: Either[ParsingFailure, Json] = Left(
+//   value = ParsingFailure(
+//     message = "expected json value got 'yolo' (line 1, column 1)",
+//     underlying = ParseException(
+//       msg = "expected json value got 'yolo' (line 1, column 1)",
+//       index = 0,
+//       line = 1,
+//       col = 1
+//     )
+//   )
+// )
