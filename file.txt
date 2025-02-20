@@ -1,5 +1,21 @@
+
 val badJson: String = "yolo"
 // badJson: String = "yolo"
+
+def factorial(n):
+    """
+    Calculate the factorial of a given number using recursion.
+    """
+    if n == 0 or n == 1:  # Base case
+        return 1
+    else:
+        return n * factorial(n - 1)  # Recursive case
+
+
+
+if __name__ == "__main__":
+    main()
+
 
 parse(badJson)
 // res0: Either[ParsingFailure, Json] = Left(
