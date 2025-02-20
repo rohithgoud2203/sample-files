@@ -1,0 +1,56 @@
+import com.typesafe.config.Config
+import org.apache.spark.sql.SparkSession
+
+object GCSConnectionHandler extends BaseJob {
+
+  override def executeJob(config: Config, spark: SparkSession): Unit = {
+    val readPath = "/home/mt24070/Downloads/BigMart Sales.csv"
+    val writePath = config.getString("hadoopOptions.fs.defaultsFs") + "/output/BigMart_Sales"
+
+    // Read Data from Local Storage
+    val inputDF = spark.read
+      .option("inferSchema", "true")
+      .option("header", "true")
+      .option("delimiter", ";")
+      .csv(readPath)
+
+    inputDF.show(truncate = false)
+
+    // Write Data to GCS Storage
+    inputDF.write
+      .option("header", "true")
+      .mode("overwrite")
+      .csv(writePath)
+  }
+}
+
+
+//import com.typesafe.config.Config
+//import org.apache.spark.sql.SparkSession
+//
+//object GCSConnectionHandler extends BaseJob {
+//
+//  override def executeJob(config: Config, spark: SparkSession): Unit = {
+//    val readPath = "/home/mt24070/Downloads/BigMart Sales.csv" // Define the actual read path
+//    val writePath = "" // Define the actual write path
+//
+//    // Read Data from the Storage
+//    val inputDF = spark.read
+//      .option("inferSchema", "true")
+//      .option("header", "true")
+//      .option("delimiter", ";")
+//      .csv(readPath)
+//
+//    inputDF.show(truncate = false)
+//
+//    // Write Data to the Storage
+////    inputDF.write
+////      .option("header", "true")
+////      .csv(writePath)
+//  }
+//}
+:wq!
+B:
+A
+A
+
