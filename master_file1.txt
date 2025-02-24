@@ -1,2 +1,6 @@
 Git conflict file is created
+
 Changed in main branch
+
+changed in master branch
+
